@@ -1,5 +1,6 @@
-import os
 from functools import reduce
+
+from shared.input import read_input
 
 def sum(lines):
     sums = []
@@ -13,12 +14,9 @@ def sum(lines):
 
     return sums
 
-def main():
-    f = open(os.path.dirname(os.path.realpath(__file__))+"/input", encoding="utf-8").read()
+def run():
+    f = read_input("day_1")
     lines = f.split("\n")
     sums = sum(lines)
     sums.sort(reverse=True)
     print(reduce(lambda x, y: x+y, sums[0:3]))
-
-if __name__ == "__main__":
-    main()
