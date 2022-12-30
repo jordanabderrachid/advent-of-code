@@ -1,4 +1,4 @@
-from day_4.run import run
+from day_5.run import run
 
 if __name__ == "__main__":
     run()
