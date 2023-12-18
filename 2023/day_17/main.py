@@ -10,99 +10,35 @@ def run():
         size = len(grid)
         target = (size - 1, size - 1)
 
-        h = []
-        heappush(h, (grid[0][1], set("0:0"), [((0, 1), "RIGHT")]))
-        heappush(h, (grid[1][0], set("0:0"), [((1, 0), "DOWN")]))
+        visited = set()
+        # heat, x, y, dx, dy, consecutive_step_in_direction
+        h = [(0, 0, 0, 0, 0, 0)]
         while h:
-            distance, visited, path = heappop(h)
-            (coord, _) = path[-1]
-            x, y = coord
-
-            if x < 0 or x >= size or y < 0 or y >= size:
+            heat, x, y, dx, dy, count = heappop(h)
+            if (x, y, dx, dy, count) in visited:
                 continue
 
-            if str(x) + ":" + str(y) in visited:
-                continue
+            visited.add((x, y, dx, dy, count))
 
-            visited.add(str(x) + ":" + str(y))
-
-            if coord == target:
-                print(path)
-                print(distance)
+            if (x, y) == target and count >= 4:
+                print(heat)
                 break
 
-            for next_direction in directions(path):
-                if next_direction == "LEFT":
-                    next_x, next_y = x, y - 1
-                    if next_y >= 0:
-                        heappush(
-                            h,
-                            (
-                                distance + grid[next_x][next_y],
-                                visited,
-                                path + [((next_x, next_y), next_direction)],
-                            ),
-                        )
+            if count < 10 and (dx, dy) != (0, 0):
+                # we can continue going in that direction
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < size and 0 <= ny < size:
+                    heappush(h, (heat + grid[nx][ny], nx, ny, dx, dy, count + 1))
 
-                if next_direction == "DOWN":
-                    next_x, next_y = x + 1, y
-                    if next_x < size:
-                        heappush(
-                            h,
-                            (
-                                distance + grid[next_x][next_y],
-                                visited,
-                                path + [((next_x, next_y), next_direction)],
-                            ),
-                        )
-
-                if next_direction == "UP":
-                    next_x, next_y = x - 1, y
-                    if next_x >= 0:
-                        heappush(
-                            h,
-                            (
-                                distance + grid[next_x][next_y],
-                                visited,
-                                path + [((next_x, next_y), next_direction)],
-                            ),
-                        )
-
-                if next_direction == "RIGHT":
-                    next_x, next_y = x, y + 1
-                    if next_y < size:
-                        heappush(
-                            h,
-                            (
-                                distance + grid[next_x][next_y],
-                                visited,
-                                path + [((next_x, next_y), next_direction)],
-                            ),
-                        )
-
-
-def directions(path):
-    next_directions = []
-    current_direction = path[-1][1]
-    if current_direction == "LEFT":
-        next_directions += ["UP", "DOWN"]
-
-    if current_direction == "DOWN":
-        next_directions += ["RIGHT", "LEFT"]
-
-    if current_direction == "RIGHT":
-        next_directions += ["DOWN", "UP"]
-
-    if current_direction == "UP":
-        next_directions += ["LEFT", "RIGHT"]
-
-    if len(path) < 3:
-        next_directions += [current_direction]
-    else:
-        if len(set([path[-1][1], path[-2][1], path[-3][1]])) > 1:
-            next_directions += [current_direction]
-
-    return next_directions
+            if count >= 4 or (dx, dy) == (0, 0):
+                # now we check all the other directions (N, E, S, W)
+                for ndx, ndy in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
+                    # if we are not going in the same direction, or oposite direction
+                    # ie only left, right turns
+                    if (ndx, ndy) != (dx, dy) and (ndx, ndy) != (-dx, -dy):
+                        nx, ny = x + ndx, y + ndy
+                        if 0 <= nx < size and 0 <= ny < size:
+                            heappush(h, (heat + grid[nx][ny], nx, ny, ndx, ndy, 1))
 
 
 if __name__ == "__main__":
