@@ -1,31 +1,53 @@
-from collections import defaultdict
 from typing import Optional
 
 
 def run():
     with open("input.txt") as f:
         lines = f.read().split("\n")
-        graph, start = parse_input(lines)
+        start = find_start(lines)
 
-        s = len(lines)
+        edge = []
         visited = set()
-        q = [(start, 0)]
-        res = 0
-        while q:
-            node, steps = q.pop(0)
-            i, j = coord(node)
-            if i < 0 or i >= s or j < 0 or j >= s:
+        stack = [coord(start)]
+        while stack:
+            x, y = stack.pop()
+            if coords_str(x, y) in visited:
                 continue
 
-            if node in visited:
-                continue
+            visited.add(coords_str(x, y))
+            edge.append((x, y))
 
-            visited.add(node)
-            res = max(res, steps)
-            for neighbor in graph[node]:
-                q.append((neighbor, steps + 1))
+            for neighbor in next_tiles((x, y), lines):
+                stack.append(neighbor)
 
-        print(res)
+        print("part 1:", len(edge) // 2)
+
+        corners = []
+        for x, y in edge:
+            if lines[x][y] in "SJLF7":
+                corners.append((x, y))
+
+        # print(corners)
+
+        # this is the shoelace formula
+        # https://en.wikipedia.org/wiki/Shoelace_formula
+        A = (
+            abs(
+                sum(
+                    [
+                        corners[i][0]
+                        * (corners[(i + 1) % len(corners)][1] - corners[i - 1][1])
+                        for i in range(len(corners))
+                    ]
+                )
+            )
+            // 2
+        )
+
+        # this is pick's theorem
+        # https://en.wikipedia.org/wiki/Pick%27s_theorem
+        i = A - (len(edge) // 2) + 1
+        print("part 2:", i)
 
 
 def coord(v: str) -> (int, int):
@@ -33,103 +55,97 @@ def coord(v: str) -> (int, int):
     return (int(s[0]), int(s[1]))
 
 
-def get_value(i: int, j: int, lines: list[str]) -> Optional[str]:
-    s = len(lines)
-    if i < 0 or i >= s or j < 0 or j >= s:
-        return None
-
-    return lines[i][j]
-
-
-def parse_input(lines: list[str]) -> (dict, str):
+def find_start(lines: list[str]) -> str:
     start = ""
-    graph = defaultdict(set)
     for i in range(len(lines)):
         for j in range(len(lines[i])):
             c = lines[i][j]
-            curr = coords_str(i, j)
-            if c == "|":
-                north = get_value(i - 1, j, lines)
-                if north in ["S", "|", "7", "F"]:
-                    fr, to = coords_str(i - 1, j), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-                south = get_value(i + 1, j, lines)
-                if south in ["S", "|", "J", "L"]:
-                    fr, to = coords_str(i + 1, j), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-            if c == "-":
-                west = get_value(i, j - 1, lines)
-                if west in ["S", "-", "L", "F"]:
-                    fr, to = coords_str(i, j - 1), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-                east = get_value(i, j + 1, lines)
-                if east in ["S", "-", "J", "7"]:
-                    fr, to = coords_str(i, j + 1), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-            if c == "L":
-                north = get_value(i - 1, j, lines)
-                if north in ["S", "|", "7", "F"]:
-                    fr, to = coords_str(i - 1, j), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-                east = get_value(i, j + 1, lines)
-                if east in ["S", "-", "J", "7"]:
-                    fr, to = coords_str(i, j + 1), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-            if c == "J":
-                north = get_value(i - 1, j, lines)
-                if north in ["S", "|", "7", "F"]:
-                    fr, to = coords_str(i - 1, j), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-                west = get_value(i, j - 1, lines)
-                if west in ["S", "-", "L", "F"]:
-                    fr, to = coords_str(i, j - 1), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-            if c == "7":
-                south = get_value(i + 1, j, lines)
-                if south in ["S", "|", "J", "L"]:
-                    fr, to = coords_str(i + 1, j), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-                west = get_value(i, j - 1, lines)
-                if west in ["S", "-", "L", "F"]:
-                    fr, to = coords_str(i, j - 1), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-            if c == "F":
-                south = get_value(i + 1, j, lines)
-                if south in ["S", "|", "J", "L"]:
-                    fr, to = coords_str(i + 1, j), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
-
-                east = get_value(i, j + 1, lines)
-                if east in ["S", "-", "J", "7"]:
-                    fr, to = coords_str(i, j + 1), curr
-                    graph[fr].add(to)
-                    graph[to].add(fr)
 
             if c == "S":
                 start = coords_str(i, j)
 
-    return graph, start
+    return start
+
+
+def next_tiles(
+    current: tuple[int, int], grid: list[list[str]]
+) -> list[tuple[int, int]]:
+    x, y = current
+    symbol = grid[x][y]
+
+    res = []
+    if symbol == "S":
+        north = grid[x - 1][y]
+        if north in "|7F":
+            res.append((x - 1, y))
+
+        east = grid[x][y + 1]
+        if east in "-J7":
+            res.append((x, y + 1))
+
+        south = grid[x + 1][y]
+        if south in "|JL":
+            res.append((x + 1, y))
+
+        west = grid[x][y - 1]
+        if west in "-LF":
+            res.append((x, y - 1))
+
+    if symbol == "|":
+        north = grid[x - 1][y]
+        if north in "|7F":
+            res.append((x - 1, y))
+
+        south = grid[x + 1][y]
+        if south in "|JL":
+            res.append((x + 1, y))
+
+    if symbol == "-":
+        east = grid[x][y + 1]
+        if east in "-J7":
+            res.append((x, y + 1))
+
+        west = grid[x][y - 1]
+        if west in "-LF":
+            res.append((x, y - 1))
+
+    if symbol == "L":
+        north = grid[x - 1][y]
+        if north in "|7F":
+            res.append((x - 1, y))
+
+        east = grid[x][y + 1]
+        if east in "-J7":
+            res.append((x, y + 1))
+
+    if symbol == "J":
+        north = grid[x - 1][y]
+        if north in "|7F":
+            res.append((x - 1, y))
+
+        west = grid[x][y - 1]
+        if west in "-LF":
+            res.append((x, y - 1))
+
+    if symbol == "7":
+        south = grid[x + 1][y]
+        if south in "|JL":
+            res.append((x + 1, y))
+
+        west = grid[x][y - 1]
+        if west in "-LF":
+            res.append((x, y - 1))
+
+    if symbol == "F":
+        east = grid[x][y + 1]
+        if east in "-J7":
+            res.append((x, y + 1))
+
+        south = grid[x + 1][y]
+        if south in "|JL":
+            res.append((x + 1, y))
+
+    return res
 
 
 def coords_str(i: int, j: int) -> str:
