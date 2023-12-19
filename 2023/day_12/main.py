@@ -1,28 +1,70 @@
 # from itertools import combinations_with_replacement
 import re
+from functools import cache
 
 
 def run():
-    with open("input_example.txt") as f:
+    with open("input.txt") as f:
         lines = f.read().split("\n")
 
         res = 0
-        # i = 1
         for line in lines:
-            # print(i)
-            # i += 1
             input, spec = line.split(" ")
-            # res += search(input * 5, ",".join([spec] * 5))
-            res += search(input, spec)
+            spec = tuple(map(int, spec.split(",")))
+            input = "?".join([input] * 5)
+            spec = spec * 5
+            print(input, spec)
+            res += count(input, spec)
+            # res += search(input, spec)
 
         print(res)
 
 
+@cache
+def count(input: str, spec: tuple) -> int:
+    if input == "":
+        return 1 if spec == () else 0
+
+    if spec == ():
+        return 0 if "#" in input else 1
+
+    result = 0
+    if input[0] == ".":
+        result += count(input[1:], spec)
+
+    if input[0] == "#":
+        if (
+            spec[0] <= len(input)
+            and "." not in input[: spec[0]]
+            and (spec[0] == len(input) or input[spec[0]] != "#")
+        ):
+            result += count(input[spec[0] + 1 :], spec[1:])
+        else:
+            result += 0
+
+    if input[0] == "?":
+        # case were ? is subs with .
+        result += count(input[1:], spec)
+
+        # case where ? is subs with #
+        if (
+            spec[0] <= len(input)
+            and "." not in input[: spec[0]]
+            and (spec[0] == len(input) or input[spec[0]] != "#")
+        ):
+            result += count(input[spec[0] + 1 :], spec[1:])
+        else:
+            result += 0
+
+    return result
+
+
 def search(input: str, spec: str) -> int:
     slots = count_slots(input)
+    print(slots)
     res = [0]
 
-    search_space = 2**slots
+    # search_space = 2**slots
     attempt = [0]
 
     def backtrack(curr: list[str]):
@@ -41,7 +83,7 @@ def search(input: str, spec: str) -> int:
     backtrack(["."])
     backtrack(["#"])
 
-    print(attempt[0], "/", search_space)
+    # print(attempt[0], "/", search_space)
     return res[-1]
 
 
@@ -53,7 +95,7 @@ def replace(input: str, arrangement: list[str]) -> str:
 
 
 def match(input: str, spec: str, partial=False) -> bool:
-    print(input, spec, partial)
+    # print(input, spec, partial)
     spec = [int(v) for v in spec.split(",")]
     pattern = re.compile(r"\#+")
 
