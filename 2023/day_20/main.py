@@ -1,3 +1,6 @@
+from collections import deque
+import math
+
 modules = {}
 
 
@@ -36,22 +39,30 @@ def run():
 
                 modules[dst].add_input(input_module)
 
+        # th -> 3947 * k
+        # sv -> 4001 * k
+        # gh -> 3943 * k
+        # ch -> 3917 * k
+
         # lo_count = 0
         # hi_count = 0
         # press_count = 0
         # press = True
         # while press:
-        for press_count in range(1, 11):
+        for press_count in range(1, 20000):
             # press_count += 1
             # if press_count % 100000 == 0:
             #     print(press_count)
-            q = [("aptly", "broadcaster", "lo")]
+            q = deque([("aptly", "broadcaster", "lo")])
             while q:
-                fr, to, pulse = q.pop(0)
+                fr, to, pulse = q.popleft()
 
-                if (to, pulse) == ("rx", "lo"):
-                    print("ans = ", press_count)
-                    # press = False
+                # print(press_count)
+                if fr in ["th", "sv", "gh", "ch"] and to == "cn" and pulse == "hi":
+                    print(press_count, fr, to, pulse)
+                # if (to, pulse) == ("rx", "lo"):
+                #     print("ans = ", press_count)
+                # press = False
                 # if pulse == "lo":
                 #     lo_count += 1
                 # else:
@@ -61,11 +72,23 @@ def run():
                 for next_module, next_pulse in modules[to].pulse(fr, pulse):
                     q.append((to, next_module, next_pulse))
 
-            print(press_count)
-            for name, mod in modules.items():
-                if isinstance(mod, Conjuction):
-                    print(name, mod._inputs)
+            # print(press_count)
+            # for name, mod in modules.items():
+            #     if isinstance(mod, Conjuction):
+            #         print(name, mod._inputs)
         # print(lo_count * hi_count)
+        print(lcm_of_list([3947, 4001, 3943, 3917]))
+
+
+def lcm(a, b):
+    return abs(a * b) // math.gcd(a, b)
+
+
+def lcm_of_list(numbers):
+    result = 1
+    for num in numbers:
+        result = lcm(result, num)
+    return result
 
 
 class FlipFlop:
