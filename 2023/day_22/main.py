@@ -1,5 +1,6 @@
 from collections import defaultdict
 from heapq import heappush, heappop
+from copy import deepcopy
 import numpy as np
 
 
@@ -71,7 +72,8 @@ def run():
             for supported in above:
                 supported_by[supported].add(support)
 
-        # print(space[:, :, 0])
+        # for k in range(10):
+        # print(space[:, :, k])
 
         # print(supports)
         # print(supported_by)
@@ -85,8 +87,29 @@ def run():
             else:
                 if all(len(supported_by[elem]) > 1 for elem in supports[b_name]):
                     res += 1
+        print("part 1", res)
 
-        print(res)
+        res = 0
+        for b in bricks:
+            tmp = remove_brick(b[0], deepcopy(supports), deepcopy(supported_by))
+            res += tmp
+
+        print("part 2", res)
+
+
+def remove_brick(brick, supports, supported_by):
+    removed = [brick]
+    brick_fell = set()
+    while removed:
+        r = removed.pop(0)
+        brick_fell.add(r)
+
+        for supported in supports[r]:
+            supported_by[supported].discard(r)
+            if len(supported_by[supported]) == 0:
+                removed.append(supported)
+
+    return len(brick_fell) - 1
 
 
 if __name__ == "__main__":
